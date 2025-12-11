@@ -139,10 +139,7 @@ export default function Navbar() {
           </span>
 
           {/* ✅ NEW ADMINS LINK */}
-          <span
-            className="link"
-            onClick={() => router.push("/admin-management")}
-          >
+          <span className="link" onClick={() => router.push("/admins")}>
             👤 Admins
           </span>
 
@@ -192,10 +189,7 @@ export default function Navbar() {
         </span>
 
         {/* ✅ NEW MOBILE ADMINS */}
-        <span
-          className="mobile-link"
-          onClick={() => router.push("/admin-management")}
-        >
+        <span className="mobile-link" onClick={() => router.push("/admins")}>
           👤 Admins
         </span>
 
