@@ -118,11 +118,18 @@ export default function ScheduleManagementPage() {
 
     const applicable = (discounts || []).filter((d) => {
       try {
-        const until = new Date(d.until);
-        if (until < selected) return false;
+        const selectedISO = date;
+
+        if (!discountIsActiveForDate(d, selectedISO)) return false;
+
+        const dayName = new Date(date).toLocaleDateString(undefined, {
+          weekday: "long",
+        });
+
         if (d.days && d.days.length && !d.days.includes(dayName)) return false;
         if (d.slots && d.slots.length && !d.slots.includes(slotLabel))
           return false;
+
         return true;
       } catch (e) {
         return false;
@@ -310,11 +317,33 @@ export default function ScheduleManagementPage() {
 
   const grouped = groupSlotsDynamic(timeSlots);
 
+  function discountIsActiveForDate(discount, selectedDateISO) {
+    const today = todayISO; // already defined above
+    const selected = selectedDateISO;
+
+    const created = discount.createdAt
+      ? discount.createdAt.split("T")[0]
+      : today; // assume today if missing
+
+    const until = discount.until.split("T")[0];
+
+    // If selected date is after discount's validity period -> NO
+    if (selected > until) return false;
+
+    // If discount created today -> it applies only for today or future
+    if (created === today) {
+      return selected >= today;
+    }
+
+    // If discount created earlier -> valid for any date >= created
+    return selected >= created;
+  }
+
   return (
     <div
       style={{
         padding: 28,
-        minHeight: "auto",
+        minHeight: "100vh",
         background: "#07120f",
         color: "white",
       }}
