@@ -7,6 +7,12 @@ import { useEffect, useState, useRef } from "react";
  Event Management Page
  (layout expanded / fixed navbar overlap)
 */
+function getLocalISODate(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export default function EventManagementPage() {
   // data
@@ -100,7 +106,7 @@ export default function EventManagementPage() {
       return _showToast("error", "Percent must be > 0");
     if (!until) return _showToast("error", "End date required");
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalISODate();
     if (until < today) return _showToast("error", "Date cannot be in the past");
 
     setConfirmModal({
@@ -208,7 +214,7 @@ export default function EventManagementPage() {
 
   const currentEvents = events.filter((e) => e.type === "current");
   const futureEvents = events.filter((e) => e.type === "future");
-  const todayISO = new Date().toISOString().split("T")[0];
+  const todayISO = getLocalISODate();
 
   return (
     <div

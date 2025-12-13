@@ -1,11 +1,12 @@
-// Updated code with phone number input and manual admin name input while keeping layout intact.
-// (Please paste your original full file so I can accurately integrate the fields in the exact spots.)
-// Updated code with phone number and admin name inputs
-// (Entire updated file; layout preserved)
-
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+
+function getDayNameFromISO(dateISO) {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const localDate = new Date(y, m - 1, d); // LOCAL date (no UTC shift)
+  return localDate.toLocaleDateString(undefined, { weekday: "long" });
+}
 
 export default function ScheduleManagementPage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -95,45 +96,34 @@ export default function ScheduleManagementPage() {
 
   function computeBasePrice(slotLabel) {
     if (!pricingConfig) return 0;
-    const weekdayNames = pricingConfig.weekdayDays || [];
-    const weekendNames = pricingConfig.weekendDays || [];
 
     const ts = (pricingConfig.timeSlots || []).find(
       (t) => t.label === slotLabel
     );
-    const dayName = new Date(date).toLocaleDateString(undefined, {
-      weekday: "long",
-    });
-    const isWeekend = weekendNames.includes(dayName);
-    const basePrice = ts ? (isWeekend ? ts.weekendPrice : ts.weekdayPrice) : 0;
-    return basePrice;
+    if (!ts) return 0;
+
+    const dayName = getDayNameFromISO(date); // ✅ FIXED
+    const weekdayDays = pricingConfig.weekdayDays || [];
+
+    const isWeekday = weekdayDays.includes(dayName);
+
+    return isWeekday ? ts.weekdayPrice : ts.weekendPrice;
   }
 
   function computeDiscountForSlot(slotLabel) {
     if (!pricingConfig) return null;
-    const dayName = new Date(date).toLocaleDateString(undefined, {
-      weekday: "long",
-    });
-    const selected = new Date(date + "T00:00:00");
+
+    const dayName = getDayNameFromISO(date); // ✅ FIXED
 
     const applicable = (discounts || []).filter((d) => {
-      try {
-        const selectedISO = date;
+      const selectedISO = date;
 
-        if (!discountIsActiveForDate(d, selectedISO)) return false;
-
-        const dayName = new Date(date).toLocaleDateString(undefined, {
-          weekday: "long",
-        });
-
-        if (d.days && d.days.length && !d.days.includes(dayName)) return false;
-        if (d.slots && d.slots.length && !d.slots.includes(slotLabel))
-          return false;
-
-        return true;
-      } catch (e) {
+      if (!discountIsActiveForDate(d, selectedISO)) return false;
+      if (d.days && d.days.length && !d.days.includes(dayName)) return false;
+      if (d.slots && d.slots.length && !d.slots.includes(slotLabel))
         return false;
-      }
+
+      return true;
     });
 
     if (!applicable.length) return null;
@@ -142,15 +132,25 @@ export default function ScheduleManagementPage() {
       (acc, cur) => (cur.percent > acc.percent ? cur : acc),
       { percent: 0 }
     );
+
     const base = computeBasePrice(slotLabel);
-    const discounted = Math.round(base * (1 - (best.percent || 0) / 100));
-    return { percent: best.percent || 0, discountedPrice: discounted };
+    const discounted = Math.round(base * (1 - best.percent / 100));
+
+    return { percent: best.percent, discountedPrice: discounted };
   }
 
-  const todayISO = new Date().toISOString().split("T")[0];
-  const tomorrowISO = new Date(Date.now() + 86400000)
-    .toISOString()
-    .split("T")[0];
+  function getLocalISODate(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const todayISO = getLocalISODate();
+  const tomorrowISO = getLocalISODate(
+    new Date(new Date().setDate(new Date().getDate() + 1))
+  );
+
   function dateIsPast(selectedDateISO) {
     return selectedDateISO < todayISO;
   }
